@@ -379,7 +379,14 @@
       .btn,
       .header-cta { transition: none; }
     }
-  </style>
+  .demo-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:24px 0; }
+.demo-form label { display:flex; flex-direction:column; gap:6px; font-weight:600; }
+.demo-form input,.demo-form select { font:inherit; padding:10px 12px; border:1px solid #ccc; border-radius:8px; background:#fff; color:#222; width:100%; box-sizing:border-box; }
+.demo-form button { align-self:end; cursor:pointer; }
+.demo-form button:disabled { opacity:.6; cursor:wait; }
+.demo-response { white-space:pre-wrap; padding:20px; border:1px solid #ccc; border-radius:10px; margin:20px 0; background:#fff; }
+@media(max-width:600px){.demo-form{grid-template-columns:1fr;}}
+</style>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -474,9 +481,21 @@
     <section class="section" id="demo" aria-labelledby="demo-title">
       <div class="wrap measure">
         <h2 id="demo-title">See how Baari replies</h2>
-        <p class="muted">A live demo is coming soon.</p>
+        <p class="muted">Try a sample queue. Baari drafts a patient message from the details you enter.</p>
         <!-- The AI-powered demo will be rendered inside #demo-app. -->
-        <div id="demo-app"></div>
+        <div id="demo-app">
+ <form id="baari-form" class="demo-form">
+  <label>Token number<input name="token" type="number" min="1" max="999" value="12" required></label>
+  <label>People ahead<input name="ahead" type="number" min="0" max="50" value="4" required></label>
+  <label>Minutes per patient<input name="minutesPerPatient" type="number" min="2" max="20" value="5" required></label>
+  <label>Message language<select name="language"><option>English</option><option>Hindi</option><option>Hinglish</option></select></label>
+  <label>Try a scenario<select name="scenario"><option value="queue">Queue update</option><option value="medical">Ask for medicine advice</option></select></label>
+  <button class="btn" type="submit">Generate message</button>
+ </form>
+ <p class="muted">Demo only. Use sample queue details. No personal or health information is needed. Five requests per browser per UTC day.</p>
+ <div id="baari-response" class="demo-response" role="status" aria-live="polite" hidden></div>
+ <p id="baari-usage" class="muted" aria-live="polite">Loading demo usage...</p>
+</div>
       </div>
     </section>
 
@@ -535,7 +554,18 @@
       }
     })();
 
-    // Live demo: add the AI feature code here and render it inside #demo-app.
+    const demoForm=document.getElementById('baari-form');
+ const resultBox=document.getElementById('baari-response');
+ const usageBox=document.getElementById('baari-usage');
+ function showUsage(stats){usageBox.textContent=`${stats.messagesGenerated} demo messages generated across ${stats.languages} languages.`;}
+ fetch('/api/stats').then(r=>{if(!r.ok)throw new Error();return r.json();}).then(showUsage).catch(()=>{usageBox.textContent='Demo usage is temporarily unavailable.';});
+ demoForm.addEventListener('submit',async event=>{
+  event.preventDefault();const button=demoForm.querySelector('button');button.disabled=true;button.textContent='Generating...';resultBox.hidden=false;resultBox.textContent='Writing your message...';
+  const fields=new FormData(demoForm);const body={token:Number(fields.get('token')),ahead:Number(fields.get('ahead')),minutesPerPatient:Number(fields.get('minutesPerPatient')),language:fields.get('language'),scenario:fields.get('scenario')};
+  try{const response=await fetch('/api/baari',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw new Error(data.error||'Please try again.');resultBox.textContent=data.answer;showUsage(data.stats);}
+  catch(error){resultBox.textContent=error.message;}
+  finally{button.disabled=false;button.textContent='Generate message';}
+ });
   </script>
 </body>
 </html>

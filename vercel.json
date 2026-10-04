@@ -1,0 +1,39 @@
+{
+  "builds": [
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "baari.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "stats.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/baari",
+      "dest": "/baari.js",
+      "headers": {
+        "Cache-Control": "no-store"
+      }
+    },
+    {
+      "src": "/api/stats",
+      "dest": "/stats.js",
+      "headers": {
+        "Cache-Control": "no-store"
+      }
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
+    }
+  ]
+}
