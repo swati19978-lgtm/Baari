@@ -16,7 +16,12 @@ export default async function handler(req,res){
  let inputTokens=0,outputTokens=0;
  try{
   const modelResult=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${c.model}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':c.GEMINI_API_KEY},body:JSON.stringify({systemInstruction:{parts:[{text:SYSTEM_PROMPT}]},contents:[{role:'user',parts:[{text:makePrompt(input)}]}],generationConfig:{maxOutputTokens:200,temperature:0.2,thinkingConfig:{thinkingBudget:0}}}),signal:AbortSignal.timeout(12000)});
-  if(!modelResult.ok)throw new Error('Generation failed');
+  if(!modelResult.ok){
+   let providerError;try{providerError=await modelResult.json();}catch{}
+   const message=String(providerError?.error?.message||'Generation failed').replaceAll(c.GEMINI_API_KEY,'[hidden]').slice(0,700);
+   console.error('Gemini generation failed',{status:modelResult.status,code:providerError?.error?.status,message});
+   throw new Error('Generation failed');
+  }
   const result=await modelResult.json();inputTokens=result.usageMetadata?.promptTokenCount||0;outputTokens=result.usageMetadata?.candidatesTokenCount||0;
   const answer=(result.candidates?.[0]?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('').trim();
   if(!answer||result.candidates?.[0]?.finishReason!=='STOP')throw new Error('Incomplete generation');
