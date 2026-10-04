@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Baari | Tokens and wait times on WhatsApp for small clinics</title>
+  <meta name="description" content="Baari is a WhatsApp-based token and wait-time tool for small clinics. Patients get a token and a wait time range, and your receptionist runs the queue from one phone screen.">
+  <meta name="theme-color" content="#1F5C45">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Hind:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ---------- Design tokens ---------- */
+    :root {
+      /* Colours */
+      --paper: #F6F7F2;
+      --white: #FFFFFF;
+      --ink: #1D2B24;
+      --muted: #55635B;
+      --green: #1F5C45;
+      --green-dark: #17473A;   /* button hover and focus only */
+      --marigold: #F2BE55;
+      --mint: #E2EEE6;         /* patient messages in the chat example */
+      --line: #D9E0D9;
+
+      /* Type: two families, four sizes */
+      --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+      --font-body: "Hind", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --text-sm: .9375rem;
+      --text-md: 1.125rem;
+      --text-lg: clamp(1.75rem, 5vw, 2.25rem);
+      --text-xl: clamp(2.75rem, 11vw, 4.5rem);
+
+      /* Layout */
+      --space-section: 2.75rem;
+      --radius: 10px;
+      --max: 1080px;
+      --measure: 40rem;
+    }
+
+    /* ---------- Base ---------- */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 5rem;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: var(--text-md);
+      line-height: 1.6;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    h1, h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      line-height: 1.1;
+      margin: 0 0 1rem;
+    }
+
+    h1 {
+      font-size: var(--text-xl);
+      color: var(--green);
+    }
+
+    h2 { font-size: var(--text-lg); }
+
+    p { margin: 0 0 1rem; }
+
+    a { color: var(--green); }
+
+    a:focus-visible {
+      outline: 3px solid var(--green-dark);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    .wrap {
+      width: min(100% - 2.5rem, var(--max));
+      margin-inline: auto;
+    }
+
+    /* Keeps text sections to a comfortable reading width */
+    .measure > * { max-width: var(--measure); }
+
+    .section { padding-block: var(--space-section); }
+
+    .muted { color: var(--muted); }
+
+    .small { font-size: var(--text-sm); }
+
+    .skip-link {
+      position: absolute;
+      left: -999px;
+      top: 1rem;
+      z-index: 20;
+      padding: .5rem 1rem;
+      background: var(--white);
+    }
+
+    .skip-link:focus { left: 1rem; }
+
+    /* ---------- Button: one style everywhere ---------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 3rem;
+      padding: .625rem 1.25rem;
+      border-radius: var(--radius);
+      background: var(--green);
+      color: var(--white);
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color .15s ease;
+    }
+
+    .btn:hover { background: var(--green-dark); }
+
+    /* ---------- Header ---------- */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(246, 247, 242, .94);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: 4.25rem;
+    }
+
+    .wordmark {
+      display: inline-flex;
+      align-items: baseline;
+      gap: .375rem;
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      font-weight: 700;
+      line-height: 1;
+      color: var(--green);
+      text-decoration: none;
+    }
+
+    .wordmark-hi {
+      font-size: var(--text-sm);
+      color: var(--muted);
+    }
+
+    /* Header button stays hidden while the hero button is on screen */
+    .header-cta { transition: opacity .2s ease, visibility .2s ease; }
+
+    .header-cta.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    /* ---------- Hero ---------- */
+    .hero { padding-block: 2rem var(--space-section); }
+
+    .hero-answer { font-weight: 600; }
+
+    .hero .btn { margin-top: .5rem; }
+
+    /* Chat example */
+    .phone {
+      width: 100%;
+      max-width: 21rem;
+      margin: 2rem auto 0;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--white);
+      box-shadow: 0 20px 40px -28px rgba(31, 92, 69, .45);
+      overflow: hidden;
+    }
+
+    .phone-bar {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .75rem 1rem;
+      background: var(--green);
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    .avatar {
+      display: grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: var(--marigold);
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-weight: 700;
+    }
+
+    .chat {
+      display: flex;
+      flex-direction: column;
+      gap: .625rem;
+      padding: 1rem;
+      background: var(--paper);
+    }
+
+    .msg {
+      max-width: 86%;
+      padding: .625rem .75rem .375rem;
+      border-radius: 14px;
+      font-size: var(--text-sm);
+      line-height: 1.45;
+    }
+
+    .msg p { margin: 0 0 .25rem; }
+
+    .msg-out {
+      align-self: flex-end;
+      background: var(--mint);
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg-in {
+      align-self: flex-start;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-bottom-left-radius: 4px;
+    }
+
+    .time {
+      display: block;
+      text-align: right;
+      font-size: .75rem;
+      color: var(--muted);
+    }
+
+    .token-slip {
+      display: inline-flex;
+      align-items: baseline;
+      gap: .5rem;
+      margin-bottom: .5rem;
+      padding: .25rem .75rem .125rem;
+      border-radius: 6px;
+      background: var(--marigold);
+      font-size: .75rem;
+      font-weight: 600;
+    }
+
+    .token-number {
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    /* One page-load moment: messages arrive in order. Added by JS only. */
+    .chat.is-playing .msg {
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .45s ease, transform .45s ease;
+    }
+
+    .chat.is-playing .msg.is-shown {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ---------- How it works ---------- */
+    .steps {
+      list-style: none;
+      margin: 1.5rem 0 0;
+      padding: 0;
+      display: grid;
+      gap: 1.25rem;
+      counter-reset: step;
+    }
+
+    .steps li {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 2.25rem 1fr;
+      gap: .875rem;
+      align-items: start;
+      align-content: start;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      display: grid;
+      place-items: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: var(--marigold);
+      font-family: var(--font-display);
+      font-weight: 700;
+    }
+
+    .steps p {
+      margin: 0;
+      padding-top: .125rem;
+    }
+
+    /* ---------- Good to know ---------- */
+    .facts {
+      display: grid;
+      gap: 1.25rem;
+      margin: 1.5rem 0 0;
+    }
+
+    .facts dt { font-weight: 600; }
+
+    .facts dd {
+      margin: .125rem 0 0;
+      color: var(--muted);
+    }
+
+    /* ---------- Pilot and sign-up ---------- */
+    .join .btn { margin: .25rem 0 .5rem; }
+
+    /* ---------- Footer ---------- */
+    .site-footer {
+      padding-block: 2rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: .5rem 1.5rem;
+    }
+
+    .footer-inner p { margin: 0; }
+
+    /* ---------- Larger screens ---------- */
+    @media (min-width: 860px) {
+      :root { --space-section: 4rem; }
+
+      .hero { padding-block: 4rem var(--space-section); }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.1fr .9fr;
+        gap: 3rem;
+        align-items: center;
+      }
+
+      .phone { margin: 0 auto; }
+
+      .steps {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2rem;
+      }
+
+      .steps li { grid-template-columns: 1fr; }
+
+      .facts {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .btn,
+      .header-cta { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="wordmark" href="#top" aria-label="Baari, back to top">Baari <span class="wordmark-hi" lang="hi" aria-hidden="true">बारी</span></a>
+      <a class="btn header-cta" href="#join" data-pilot-link>Join the free pilot</a>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- Hero: the problem, the answer and the main action -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="measure">
+          <h1 id="hero-title">Kitna time lagega?</h1>
+          <p>During the evening rush, your receptionist is answering this while handling walk-ins, payments, calls and WhatsApp messages.</p>
+          <p class="hero-answer">Baari answers it on WhatsApp, with a token and a wait time range for every patient.</p>
+          <a class="btn" id="hero-cta" href="#join" data-pilot-link>Join the free pilot</a>
+        </div>
+
+        <div class="phone" role="img" aria-label="Example chat. A patient asks for a token and how long the wait will be. The clinic replies with token 23, says 8 patients are ahead and the wait is about 35 to 50 minutes. Later it messages that 3 patients are ahead and the patient can leave for the clinic.">
+          <div class="phone-bar" aria-hidden="true">
+            <span class="avatar">B</span>
+            <span>Your clinic</span>
+          </div>
+          <div class="chat" data-chat aria-hidden="true">
+            <div class="msg msg-out">
+              <p>Namaste, Dr. sahab ke liye token chahiye. Kitna time lagega?</p>
+              <span class="time">6:42 pm</span>
+            </div>
+            <div class="msg msg-in">
+              <div class="token-slip">Token <span class="token-number">23</span></div>
+              <p>Aapse pehle 8 patients hain. Wait time: lagbhag 35 se 50 minute.</p>
+              <p>Jab 3 patients aage honge, hum aapko message karenge.</p>
+              <span class="time">6:42 pm</span>
+            </div>
+            <div class="msg msg-in">
+              <p>Token 23: ab 3 patients aage hain. Aap clinic ke liye nikal sakte hain.</p>
+              <span class="time">7:19 pm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" id="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <h2 id="how-title">How it works</h2>
+        <ol class="steps">
+          <li><p>Patients message your clinic on WhatsApp in Hindi, English or Hinglish and get a token.</p></li>
+          <li><p>They see a wait time range that updates with the doctor's pace.</p></li>
+          <li><p>They get a message when a few patients are ahead.</p></li>
+          <li><p>Your receptionist runs the queue from one phone screen.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Who it's for -->
+    <section class="section" id="who" aria-labelledby="who-title">
+      <div class="wrap measure">
+        <h2 id="who-title">Who it's for</h2>
+        <p>Walk-in clinics with one to three doctors and about 30 to 80 patients a day, such as general physicians, paediatricians, ENT and dermatology.</p>
+      </div>
+    </section>
+
+    <!-- Good to know: what Baari does not do, and what you don't need -->
+    <section class="section" id="limits" aria-labelledby="limits-title">
+      <div class="wrap">
+        <h2 id="limits-title">Good to know</h2>
+        <dl class="facts">
+          <div>
+            <dt>No medical advice</dt>
+            <dd>Baari only handles clinic operations. Medical questions go to your clinic staff.</dd>
+          </div>
+          <div>
+            <dt>No app for patients</dt>
+            <dd>They only need WhatsApp.</dd>
+          </div>
+          <div>
+            <dt>No new hardware</dt>
+            <dd>Your receptionist only needs a phone.</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- Try it: placeholder for the AI feature -->
+    <section class="section" id="demo" aria-labelledby="demo-title">
+      <div class="wrap measure">
+        <h2 id="demo-title">See how Baari replies</h2>
+        <p class="muted">A live demo is coming soon.</p>
+        <!-- The AI-powered demo will be rendered inside #demo-app. -->
+        <div id="demo-app"></div>
+      </div>
+    </section>
+
+    <!-- Free pilot and sign-up -->
+    <section class="section join" id="join" aria-labelledby="join-title">
+      <div class="wrap measure">
+        <h2 id="join-title">Free 30-day pilot</h2>
+        <p>I'm Swati Agnihotri, an MBA student at ISB. I'm looking for a few clinics in Mohali, Chandigarh and Panchkula to try Baari free for 30 days, and I'd value your honest feedback.</p>
+        <a class="btn" href="#join" data-pilot-link>Join the free pilot</a>
+        <p class="small muted">Opens the sign-up form.</p>
+        <p class="small muted">Know a doctor who might be interested? Please introduce us at <a href="mailto:Swati19978@gmail.com">Swati19978@gmail.com</a>.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <p class="wordmark">Baari</p>
+      <p class="small muted">Contact: <a href="mailto:Swati19978@gmail.com">Swati19978@gmail.com</a></p>
+    </div>
+  </footer>
+
+  <script>
+    // Paste your sign-up form link here. Every "Join the free pilot" button uses it.
+    var PILOT_FORM_URL = "https://tally.so/r/WOvOdQ";
+
+    (function () {
+      // Point every pilot button at the form once a real link is added.
+      if (/^https?:\/\//.test(PILOT_FORM_URL)) {
+        document.querySelectorAll('[data-pilot-link]').forEach(function (link) {
+          link.href = PILOT_FORM_URL;
+        });
+      }
+
+      // Show the header button only after the hero button scrolls out of view.
+      var headerCta = document.querySelector('.header-cta');
+      var heroCta = document.getElementById('hero-cta');
+      if (headerCta && heroCta && 'IntersectionObserver' in window) {
+        headerCta.classList.add('is-hidden');
+        new IntersectionObserver(function (entries) {
+          headerCta.classList.toggle('is-hidden', entries[0].isIntersecting);
+        }).observe(heroCta);
+      }
+
+      // Hero chat: messages arrive one after another on page load.
+      // Skipped for people who prefer reduced motion. Without JavaScript, all messages show.
+      var chat = document.querySelector('[data-chat]');
+      var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (chat && !prefersReducedMotion) {
+        var messages = chat.querySelectorAll('.msg');
+        chat.classList.add('is-playing');
+        messages.forEach(function (message, index) {
+          setTimeout(function () { message.classList.add('is-shown'); }, 400 + index * 900);
+        });
+      }
+    })();
+
+    // Live demo: add the AI feature code here and render it inside #demo-app.
+  </script>
+</body>
+</html>
