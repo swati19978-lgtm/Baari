@@ -557,7 +557,11 @@
     const demoForm=document.getElementById('baari-form');
  const resultBox=document.getElementById('baari-response');
  const usageBox=document.getElementById('baari-usage');
- function showUsage(stats){usageBox.textContent=`${stats.messagesGenerated} demo messages generated across ${stats.languages} languages.`;}
+ function showUsage(stats){
+  const languages=Object.entries(stats.languageCounts||{}).map(([language,count])=>`${language}: ${count}`).join(', ');
+  usageBox.textContent=`${stats.messagesGenerated} demo messages generated across ${stats.languages} languages.`;
+  if(languages)usageBox.textContent+=` Queue updates: ${stats.queueUpdates}. Medical test responses: ${stats.medicalTests}. Languages tried: ${languages}. These are sample requests, not clinic adoption figures.`;
+ }
  fetch('/api/stats').then(r=>{if(!r.ok)throw new Error();return r.json();}).then(showUsage).catch(()=>{usageBox.textContent='Demo usage is temporarily unavailable.';});
  demoForm.addEventListener('submit',async event=>{
   event.preventDefault();const button=demoForm.querySelector('button');button.disabled=true;button.textContent='Generating...';resultBox.hidden=false;resultBox.textContent='Writing your message...';

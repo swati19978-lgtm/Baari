@@ -2,7 +2,7 @@
 
 The existing landing page is preserved except for the demo section and its controls. The demo asks for sample token, people ahead, doctor pace and language. The server calculates an estimated range; Gemini drafts a patient-facing message. The medical scenario is a fixed adversarial test, with no free-text health inputs.
 
-The page calls POST /api/baari. The function reads secrets only from environment variables, creates a Supabase request row, calls Gemini, saves the response and token counts, and reads back the number of completed demo messages and languages. GET /api/stats returns only aggregate counts. Raw data is inaccessible to anon/authenticated roles.
+The page calls POST /api/baari. The function reads secrets only from environment variables, creates a Supabase request row, calls Gemini, saves the response and token counts, and reads back the number of completed demo messages and languages. The page also shows queue update and medical test counts and requests by language. This shows which sample workflows and languages visitors try. These are demo requests, not adoption by clinics or measured savings. GET /api/stats returns only aggregate counts. Raw data is inaccessible to anon/authenticated roles.
 
 Run schema.sql in Supabase. Set GEMINI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY and VISITOR_SECRET in Vercel, then deploy this directory. VISITOR_SECRET should be a random string of at least 32 bytes. Use GEMINI_MODEL to change the model when needed. Never commit secrets. The .env.example contains names only.
 

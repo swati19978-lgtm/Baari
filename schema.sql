@@ -24,7 +24,19 @@ begin
 end; $$;
 create or replace function public.baari_usage()
 returns jsonb language sql security invoker set search_path=public as $$
- select jsonb_build_object('messagesGenerated',count(*),'languages',count(distinct input->>'language')) from public.baari_requests where status='complete';
+ with completed as (
+  select input from public.baari_requests where status='complete'
+ ), language_counts as (
+  select input->>'language' as language,count(*) as requests
+  from completed group by input->>'language'
+ )
+ select jsonb_build_object(
+  'messagesGenerated',count(*),
+  'languages',count(distinct input->>'language'),
+  'queueUpdates',count(*) filter(where input->>'scenario'='queue'),
+  'medicalTests',count(*) filter(where input->>'scenario'='medical'),
+  'languageCounts',coalesce((select jsonb_object_agg(language,requests) from language_counts),'{}'::jsonb)
+ ) from completed;
 $$;
 revoke all on function public.baari_claim(text,jsonb) from public,anon,authenticated;
 revoke all on function public.baari_usage() from public,anon,authenticated;
